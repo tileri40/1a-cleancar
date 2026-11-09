@@ -1,0 +1,16 @@
+(()=>{
+const hero=document.querySelector('.image-hero'),overlay=document.getElementById('location-intro'),replay=document.getElementById('intro-replay'),skip=document.getElementById('intro-skip'),image=hero.querySelector('.hero-image');
+const place=document.getElementById('intro-place'),address=document.getElementById('intro-address'),kicker=document.getElementById('intro-kicker');
+const reduced=matchMedia('(prefers-reduced-motion: reduce)'),destination=[49.2945479,8.6508499];
+let map,tiles,marker,timers=[],run=0;
+function later(fn,ms){timers.push(setTimeout(fn,ms));}
+function clear(){run++;timers.forEach(clearTimeout);timers=[];if(map)map.stop();}
+function finish(photos=true){clear();overlay.hidden=true;hero.classList.remove('intro-playing');skip.hidden=true;replay.textContent='Standort-Intro wiederholen';if(photos&&!reduced.matches){image.src='atelier-3.jpeg';image.alt='Einblick in die Fahrzeugpflegehalle von 1a Clean Car';later(()=>{image.src='wa-7.png';image.alt='Gepflegter Mercedes vor 1a Clean Car bei Nacht';},7500);}}
+function play(){clear();if(!window.L){finish(false);return;}overlay.hidden=false;overlay.classList.remove('arrived');hero.classList.add('intro-playing');skip.hidden=false;replay.textContent='Neu starten';place.textContent='Deutschland';kicker.textContent='UNSER NEUES KAPITEL';address.textContent='Von hier zu Ihrem nächsten Glanzmoment.';
+if(!map){map=L.map('intro-map',{zoomControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false,zoomAnimation:true,attributionControl:true});map.attributionControl.setPrefix(false);tiles=L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:18,attribution:'Imagery © Esri, Vantor, Earthstar Geographics, GIS User Community',crossOrigin:true}).addTo(map);marker=L.marker(destination,{icon:L.divIcon({className:'intro-pin-wrap',html:'<span class="intro-pin">✶</span>',iconSize:[48,58],iconAnchor:[24,58]}),interactive:false});}
+map.invalidateSize();map.setView([51.1,10.4],6,{animate:false});if(map.hasLayer(marker))map.removeLayer(marker);
+const current=run;let started=false;function begin(){if(started||current!==run)return;started=true;tiles.off('load',begin);later(()=>{kicker.textContent='WILLKOMMEN IN';place.textContent='Walldorf';address.textContent='Kleinfeldweg 40 · 69190 Walldorf';map.flyTo(destination,17,{duration:reduced.matches?0:5,easeLinearity:.2,animate:!reduced.matches});later(()=>{marker.addTo(map);overlay.classList.add('arrived');kicker.textContent='HIER FINDEN SIE UNS';place.textContent='1a Clean Car';},reduced.matches?50:5200);later(()=>finish(),reduced.matches?1800:7600);},reduced.matches?50:1200);}
+tiles.on('load',begin);later(begin,1800);later(()=>finish(false),13000);}
+replay.addEventListener('click',play);skip.addEventListener('click',()=>finish(false));document.addEventListener('visibilitychange',()=>{if(document.hidden&&!overlay.hidden)finish(false);});
+if(!reduced.matches){const observer=new IntersectionObserver(entries=>{if(entries.some(e=>e.isIntersecting)){observer.disconnect();play();}},{threshold:.25});observer.observe(hero);}
+})();

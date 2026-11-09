@@ -1,0 +1,11 @@
+(()=>{
+const viewport=document.querySelector('.review-viewport'),track=document.querySelector('.review-track'),cards=[...document.querySelectorAll('.review-card')];if(!viewport||!cards.length)return;
+const reduced=matchMedia('(prefers-reduced-motion: reduce)');let timer,frame,hover=false,focused=false,touchUntil=0;
+for(const card of cards.slice(0,4)){const clone=card.cloneNode(true);clone.setAttribute('aria-hidden','true');clone.querySelectorAll('img').forEach(img=>img.alt='');track.appendChild(clone);}
+function stop(){clearTimeout(timer);cancelAnimationFrame(frame);}
+function step(){return cards[1].offsetLeft-cards[0].offsetLeft;}
+function animateTo(target,complete){const from=viewport.scrollLeft,start=performance.now();function tick(now){const t=Math.min(1,(now-start)/1000),ease=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;viewport.scrollLeft=from+(target-from)*ease;if(t<1)frame=requestAnimationFrame(tick);else complete();}frame=requestAnimationFrame(tick);}
+function normalize(){const cycle=cards.length*step();if(viewport.scrollLeft>=cycle-2)viewport.scrollLeft-=cycle;}
+function schedule(){stop();if(reduced.matches||document.hidden||hover||focused)return;timer=setTimeout(()=>{if(Date.now()<touchUntil){schedule();return;}normalize();const width=step(),next=Math.round(viewport.scrollLeft/width)+1;animateTo(next*width,()=>{normalize();schedule();});},12000);}
+viewport.addEventListener('mouseenter',()=>{hover=true;stop();});viewport.addEventListener('mouseleave',()=>{hover=false;schedule();});viewport.addEventListener('focusin',()=>{focused=true;stop();});viewport.addEventListener('focusout',()=>{focused=false;schedule();});viewport.addEventListener('pointerdown',()=>{touchUntil=Date.now()+20000;stop();});viewport.addEventListener('pointerup',schedule);viewport.addEventListener('pointercancel',schedule);viewport.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();normalize();viewport.scrollBy({left:(e.key==='ArrowRight'?1:-1)*step(),behavior:reduced.matches?'instant':'smooth'});}});document.addEventListener('visibilitychange',schedule);reduced.addEventListener('change',schedule);window.addEventListener('resize',()=>{normalize();schedule();});schedule();
+})();
